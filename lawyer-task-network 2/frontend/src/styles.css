@@ -1,0 +1,157 @@
+:root {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #1b1b1b;
+  background: #f5f7fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f5f7fa;
+}
+
+a {
+  color: #1f4b99;
+  text-decoration: none;
+}
+
+a.active {
+  text-decoration: underline;
+}
+
+.app-shell {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header nav {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+main {
+  margin-top: 1rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d8deea;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.auth-card {
+  max-width: 460px;
+  margin: 3rem auto;
+  background: white;
+  border: 1px solid #d8deea;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+input,
+textarea,
+select,
+button {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #c5cede;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+button {
+  cursor: pointer;
+  background: #1f4b99;
+  color: #fff;
+  border: none;
+}
+
+button.secondary,
+.link-button {
+  background: #e8edf8;
+  color: #1f4b99;
+}
+
+.link-button {
+  width: auto;
+  padding: 0.45rem 0.7rem;
+}
+
+.error {
+  color: #b02a2a;
+}
+
+.success {
+  color: #1f7a45;
+}
+
+.task-card h4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.task-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-card.urgent {
+  border-color: #d64545;
+  background: #fff6f6;
+}
+
+.urgent-badge {
+  background: #d64545;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .row {
+    flex-direction: column;
+  }
+}
