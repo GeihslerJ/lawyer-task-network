@@ -275,9 +275,14 @@ router.get('/activity-logs', requireAuth, requireAdmin, async (req, res) => {
 router.post('/bar-verification/manual', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { userId, verified, notes } = req.body || {};
+    const targetUserId = Number(userId);
+    const verifierUserId = Number(req.user.userId);
 
-    if (!userId || typeof verified !== 'boolean') {
+    if (!Number.isInteger(targetUserId) || targetUserId <= 0 || typeof verified !== 'boolean') {
       return res.status(400).json({ error: 'userId and verified(boolean) are required' });
+    }
+    if (!Number.isInteger(verifierUserId) || verifierUserId <= 0) {
+      return res.status(400).json({ error: 'Invalid verifier user id in token' });
     }
 
     const status = verified ? 'verified' : 'rejected';
@@ -294,7 +299,7 @@ router.post('/bar-verification/manual', requireAuth, requireAdmin, async (req, r
                  nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
                  availability_status, busyness_status`,
-      [verified, status, notes ?? null, req.user.userId, userId]
+      [verified, status, notes ?? null, verifierUserId, targetUserId]
     );
 
     if (result.rowCount === 0) {
