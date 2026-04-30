@@ -293,8 +293,8 @@ router.post('/bar-verification/manual', requireAuth, requireAdmin, async (req, r
            bar_verification_status = $2,
            bar_verification_notes = $3,
            bar_verified_at = CASE WHEN $1 THEN NOW() ELSE NULL END,
-           bar_verified_by = CASE WHEN $1 THEN $4 ELSE NULL END
-       WHERE id = $5
+           bar_verified_by = CASE WHEN $1 THEN $4::INTEGER ELSE NULL END
+       WHERE id = $5::INTEGER
        RETURNING id, name, email, phone_number, practice_area, bar_id_number, state,
                  nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
