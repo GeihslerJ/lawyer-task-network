@@ -99,6 +99,7 @@ a.active {
 
 main {
   margin-top: 1.15rem;
+  min-height: calc(100vh - 130px);
 }
 
 .stack {
@@ -142,6 +143,84 @@ main {
 
 .card strong {
   color: #1a2f4d;
+}
+
+.hero-card {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1rem;
+  border-radius: 16px;
+  padding: 1.1rem;
+  border: 1px solid #cfdcf0;
+  background: linear-gradient(145deg, #f9fbff 0%, #eef4ff 100%);
+  box-shadow: var(--shadow);
+}
+
+.hero-content h3 {
+  font-size: 1.5rem;
+  margin-top: 0.15rem;
+}
+
+.hero-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.74rem;
+  color: #48658a;
+  font-weight: 700;
+}
+
+.hero-actions {
+  display: grid;
+  gap: 0.65rem;
+  align-content: center;
+}
+
+.action-tile {
+  display: block;
+  background: #fff;
+  border: 1px solid #cbdcf3;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  font-weight: 700;
+  color: #15417a;
+}
+
+.action-tile:hover {
+  border-color: #95b7e7;
+  box-shadow: 0 8px 22px rgba(19, 55, 105, 0.12);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.metric-card {
+  background: #ffffff;
+  border: 1px solid #d2dff1;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  box-shadow: 0 8px 20px rgba(13, 36, 68, 0.06);
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: #567090;
+}
+
+.metric-value {
+  margin-top: 0.2rem;
+  color: #12233c;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+
+.metric-value.metric-small {
+  font-size: 1.1rem;
 }
 
 .auth-card {
@@ -355,5 +434,13 @@ button.secondary,
   .row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .hero-card {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
