@@ -9,9 +9,10 @@ import CreateTaskPage from './pages/CreateTaskPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import FirmModePage from './pages/FirmModePage.jsx';
 import SecondChairPage from './pages/SecondChairPage.jsx';
+import AdminVerificationPage from './pages/AdminVerificationPage.jsx';
 
 function Layout({ children }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   return (
     <div className="app-shell">
@@ -24,6 +25,7 @@ function Layout({ children }) {
           <NavLink to="/second-chair">Second Chair</NavLink>
           <NavLink to="/firm">Firm Mode</NavLink>
           <NavLink to="/profile">Profile</NavLink>
+          {user?.role === 'admin' ? <NavLink to="/admin/verification">Admin</NavLink> : null}
           <button type="button" onClick={logout} className="link-button">
             Logout
           </button>
@@ -96,6 +98,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout>
               <ProfilePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/verification"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AdminVerificationPage />
             </Layout>
           </ProtectedRoute>
         }

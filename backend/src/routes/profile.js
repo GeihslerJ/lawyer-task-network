@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin, requireAuth } from '../middleware/auth.js';
 import { isValidCourthouse } from '../utils/courthouse.js';
 import { normalizeFirmCode } from '../utils/firm.js';
 import { decryptField, decryptUserSensitiveFields, encryptField } from '../utils/encryption.js';
@@ -8,11 +8,19 @@ import { emitAvailabilityUpdate } from '../socket.js';
 
 const router = Router();
 
+async function logActivity(actorUserId, targetUserId, action, metadata = null) {
+  await pool.query(
+    `INSERT INTO activity_logs (actor_user_id, target_user_id, action, metadata)
+     VALUES ($1, $2, $3, $4)`,
+    [actorUserId ?? null, targetUserId ?? null, action, metadata]
+  );
+}
+
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, name, email, phone_number, practice_area, bar_id_number, state,
-              nearest_courthouse, firm_code, verified, bar_verification_status, bar_verification_notes,
+              nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
               bar_verification_requested_at, bar_verified_at, bar_verified_by,
               availability_status, busyness_status
        FROM users WHERE id = $1`,
@@ -68,7 +76,7 @@ router.put('/me', requireAuth, async (req, res) => {
            firm_code = CASE WHEN $7 THEN $8 ELSE firm_code END
        WHERE id = $9
        RETURNING id, name, email, phone_number, practice_area, bar_id_number, state,
-                 nearest_courthouse, firm_code, verified, bar_verification_status, bar_verification_notes,
+                 nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
                  availability_status, busyness_status`,
       [
@@ -110,7 +118,7 @@ router.get('/lawyers', requireAuth, async (req, res) => {
 
     const values = [req.user.userId];
     let query = `SELECT id, name, email, phone_number, practice_area, state,
-                        nearest_courthouse, firm_code, verified, bar_verification_status, bar_verification_notes,
+                        nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
                         bar_verification_requested_at, bar_verified_at, bar_verified_by,
                         availability_status, busyness_status
                  FROM users
@@ -148,7 +156,7 @@ router.get('/firm-members', requireAuth, async (req, res) => {
 
     const membersResult = await pool.query(
       `SELECT id, name, email, phone_number, practice_area, state, nearest_courthouse,
-              firm_code, verified, bar_verification_status, bar_verification_notes,
+              firm_code, role, verified, bar_verification_status, bar_verification_notes,
               bar_verification_requested_at, bar_verified_at, bar_verified_by,
               availability_status, busyness_status
        FROM users
@@ -203,15 +211,20 @@ router.post('/me/bar-verification-request', requireAuth, async (req, res) => {
            bar_verification_requested_at = NOW()
        WHERE id = $2
        RETURNING id, name, email, phone_number, practice_area, bar_id_number, state,
-                 nearest_courthouse, firm_code, verified, bar_verification_status, bar_verification_notes,
+                 nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
                  availability_status, busyness_status`,
       [notes ?? null, req.user.userId]
     );
 
+    const updatedUser = decryptUserSensitiveFields(updated.rows[0]);
+    await logActivity(req.user.userId, req.user.userId, 'bar_verification_requested', {
+      status: updatedUser.bar_verification_status,
+    });
+
     return res.json({
       message: 'Verification request submitted (placeholder workflow).',
-      user: decryptUserSensitiveFields(updated.rows[0]),
+      user: updatedUser,
     });
   } catch (error) {
     console.error(error);
@@ -219,7 +232,43 @@ router.post('/me/bar-verification-request', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/bar-verification/manual', requireAuth, async (req, res) => {
+router.get('/bar-verification/queue', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, email, phone_number, practice_area, state, nearest_courthouse, firm_code,
+              role, verified, bar_verification_status, bar_verification_notes, bar_verification_requested_at
+       FROM users
+       WHERE bar_verification_status IN ('pending', 'rejected')
+       ORDER BY bar_verification_requested_at DESC NULLS LAST, id DESC`
+    );
+    return res.json(result.rows.map((row) => decryptUserSensitiveFields(row)));
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load verification queue' });
+  }
+});
+
+router.get('/activity-logs', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const result = await pool.query(
+      `SELECT l.id, l.actor_user_id, l.target_user_id, l.action, l.metadata, l.created_at,
+              actor.name AS actor_name, target.name AS target_name
+       FROM activity_logs l
+       LEFT JOIN users actor ON actor.id = l.actor_user_id
+       LEFT JOIN users target ON target.id = l.target_user_id
+       ORDER BY l.created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+    return res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Failed to load activity logs' });
+  }
+});
+
+router.post('/bar-verification/manual', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { userId, verified, notes } = req.body || {};
 
@@ -227,7 +276,6 @@ router.post('/bar-verification/manual', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'userId and verified(boolean) are required' });
     }
 
-    // Placeholder access model: any authenticated user can perform manual verification.
     const status = verified ? 'verified' : 'rejected';
 
     const result = await pool.query(
@@ -239,7 +287,7 @@ router.post('/bar-verification/manual', requireAuth, async (req, res) => {
            bar_verified_by = CASE WHEN $1 THEN $4 ELSE NULL END
        WHERE id = $5
        RETURNING id, name, email, phone_number, practice_area, bar_id_number, state,
-                 nearest_courthouse, firm_code, verified, bar_verification_status, bar_verification_notes,
+                 nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
                  availability_status, busyness_status`,
       [verified, status, notes ?? null, req.user.userId, userId]
@@ -249,9 +297,14 @@ router.post('/bar-verification/manual', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Target user not found' });
     }
 
+    const updatedUser = decryptUserSensitiveFields(result.rows[0]);
+    await logActivity(req.user.userId, updatedUser.id, verified ? 'bar_verified_manual' : 'bar_rejected_manual', {
+      notes: notes ?? null,
+    });
+
     return res.json({
       message: 'Manual verification updated (placeholder workflow).',
-      user: decryptUserSensitiveFields(result.rows[0]),
+      user: updatedUser,
     });
   } catch (error) {
     console.error(error);

@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
+import pool from './db.js';
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import taskRoutes from './routes/tasks.js';
@@ -54,6 +55,29 @@ app.use((err, _req, res, _next) => {
 
 initSocket(httpServer);
 
-httpServer.listen(port, () => {
-  console.log(`Backend listening on http://localhost:${port}`);
-});
+async function ensureSchema() {
+  await pool.query(
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'lawyer' CHECK (role IN ('lawyer', 'admin'))"
+  );
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS activity_logs (
+      id SERIAL PRIMARY KEY,
+      actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      target_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      action VARCHAR(80) NOT NULL,
+      metadata JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`
+  );
+}
+
+ensureSchema()
+  .then(() => {
+    httpServer.listen(port, () => {
+      console.log(`Backend listening on http://localhost:${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed schema bootstrap', error);
+    process.exit(1);
+  });

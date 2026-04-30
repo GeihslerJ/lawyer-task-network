@@ -2,6 +2,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 
 export default function DashboardPage() {
   const { token, user, setUser } = useAuth();
@@ -9,10 +10,12 @@ export default function DashboardPage() {
   const [myTasks, setMyTasks] = useState([]);
   const [firmSummary, setFirmSummary] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
         const [profile, open, mine] = await Promise.all([
           api.getProfile(token),
           api.getOpenTasks(token),
@@ -30,6 +33,8 @@ export default function DashboardPage() {
         }
       } catch (err) {
         setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -40,8 +45,9 @@ export default function DashboardPage() {
     <section className="stack">
       <h2>Dashboard</h2>
       {error ? <p className="error">{error}</p> : null}
+      {loading ? <LoadingSkeleton lines={5} /> : null}
 
-      <div className="card-grid">
+      {!loading ? <div className="card-grid">
         <article className="card">
           <h3>Welcome</h3>
           <p><strong>Name:</strong> {user?.name}</p>
@@ -57,7 +63,7 @@ export default function DashboardPage() {
           <p><strong>Your created or accepted tasks:</strong> {myTasks.length}</p>
           {firmSummary ? <p><strong>Firm available now:</strong> {firmSummary.available}</p> : null}
         </article>
-      </div>
+      </div> : null}
     </section>
   );
 }

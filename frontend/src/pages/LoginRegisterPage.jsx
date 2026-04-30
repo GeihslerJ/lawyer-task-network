@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 
 const emptyForm = {
   name: '',
@@ -25,6 +26,7 @@ export default function LoginRegisterPage() {
 
   const navigate = useNavigate();
   const { login } = useAuth();
+  const toast = useToast();
 
   const onChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -53,9 +55,11 @@ export default function LoginRegisterPage() {
         ? await api.login({ email: form.email, password: form.password })
         : await api.register(form);
       login(payload.token, payload.user);
+      toast.success(isLogin ? 'Welcome back.' : 'Account created successfully.');
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

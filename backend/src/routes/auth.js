@@ -7,6 +7,10 @@ import { normalizeFirmCode } from '../utils/firm.js';
 import { decryptUserSensitiveFields, encryptField } from '../utils/encryption.js';
 
 const router = Router();
+const adminEmails = (process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean);
 
 router.post('/register', async (req, res) => {
   try {
@@ -44,12 +48,14 @@ router.post('/register', async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const role = adminEmails.includes(email.toLowerCase()) ? 'admin' : 'lawyer';
+
     const result = await pool.query(
       `INSERT INTO users
-       (name, email, password_hash, phone_number, practice_area, bar_id_number, state, nearest_courthouse, firm_code)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       (name, email, password_hash, phone_number, practice_area, bar_id_number, state, nearest_courthouse, firm_code, role)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING id, name, email, phone_number, practice_area, bar_id_number, state, nearest_courthouse,
-                 firm_code, verified, bar_verification_status, bar_verification_notes,
+                 firm_code, role, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
                  availability_status, busyness_status`,
       [
@@ -62,11 +68,12 @@ router.post('/register', async (req, res) => {
         state,
         nearestCourthouse,
         normalizedFirmCode,
+        role,
       ]
     );
 
     const user = decryptUserSensitiveFields(result.rows[0]);
-    const token = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
 
@@ -86,7 +93,7 @@ router.post('/login', async (req, res) => {
 
     const result = await pool.query(
       `SELECT id, name, email, password_hash, phone_number, practice_area, bar_id_number, state,
-              nearest_courthouse, firm_code, verified, bar_verification_status, bar_verification_notes,
+              nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
               bar_verification_requested_at, bar_verified_at, bar_verified_by,
               availability_status, busyness_status
        FROM users
@@ -104,7 +111,21 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: dbUser.id, email: dbUser.email }, process.env.JWT_SECRET, {
+    if (adminEmails.includes(dbUser.email) && dbUser.role !== 'admin') {
+      const promoted = await pool.query(
+        `UPDATE users SET role = 'admin' WHERE id = $1
+         RETURNING id, name, email, password_hash, phone_number, practice_area, bar_id_number, state,
+                   nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
+                   bar_verification_requested_at, bar_verified_at, bar_verified_by,
+                   availability_status, busyness_status`,
+        [dbUser.id]
+      );
+      if (promoted.rowCount > 0) {
+        Object.assign(dbUser, decryptUserSensitiveFields(promoted.rows[0]));
+      }
+    }
+
+    const token = jwt.sign({ userId: dbUser.id, email: dbUser.email, role: dbUser.role }, process.env.JWT_SECRET, {
       expiresIn: '7d',
     });
 

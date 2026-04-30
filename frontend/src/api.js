@@ -35,6 +35,8 @@ export const api = {
     request('/profile/me/bar-verification-request', { method: 'POST', token, body: { notes } }),
   manualBarVerification: (token, payload) =>
     request('/profile/bar-verification/manual', { method: 'POST', token, body: payload }),
+  getVerificationQueue: (token) => request('/profile/bar-verification/queue', { token }),
+  getActivityLogs: (token, limit = 50) => request(`/profile/activity-logs?limit=${limit}`, { token }),
   getFirmMembers: (token) => request('/profile/firm-members', { token }),
   getLawyers: (token, courthouse) =>
     request(`/profile/lawyers${courthouse ? `?courthouse=${encodeURIComponent(courthouse)}` : ''}`, { token }),

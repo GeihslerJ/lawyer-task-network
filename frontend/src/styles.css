@@ -226,6 +226,61 @@ button.secondary,
   font-weight: 600;
 }
 
+.toast-stack {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-width: 360px;
+}
+
+.toast {
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(17, 23, 36, 0.3);
+}
+
+.toast.success {
+  background: #1c7c46;
+}
+
+.toast.error {
+  background: #b63a3a;
+}
+
+.toast.info {
+  background: #355f96;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #e8eef7 20%, #dce7f6 40%, #e8eef7 60%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.activity-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: #f8fbff;
+}
+
 .task-card h4 {
   margin: 0;
 }

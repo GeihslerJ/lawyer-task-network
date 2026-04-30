@@ -2,9 +2,12 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 
 export default function ProfilePage() {
   const { token, user, setUser } = useAuth();
+  const toast = useToast();
   const [form, setForm] = useState({
     phoneNumber: user?.phone_number || '',
     practiceArea: user?.practice_area || '',
@@ -22,6 +25,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -40,6 +44,9 @@ export default function ProfilePage() {
         });
       } catch (err) {
         setError(err.message);
+        toast.error(err.message);
+      } finally {
+        setInitialLoading(false);
       }
     };
 
@@ -60,8 +67,10 @@ export default function ProfilePage() {
       const updated = await api.updateProfile(token, form);
       setUser(updated);
       setMessage('Profile updated.');
+      toast.success('Profile updated.');
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -74,8 +83,10 @@ export default function ProfilePage() {
       const payload = await api.requestBarVerification(token, verificationNotes);
       setUser(payload.user);
       setMessage(payload.message);
+      toast.success(payload.message);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -94,27 +105,31 @@ export default function ProfilePage() {
         setUser(payload.user);
       }
       setMessage(payload.message);
+      toast.success(payload.message);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
 
   return (
     <section className="stack">
       <h2>Profile</h2>
+      {initialLoading ? <LoadingSkeleton lines={6} /> : null}
 
-      <article className="card">
+      {!initialLoading ? <article className="card">
         <p><strong>Name:</strong> {user?.name}</p>
         <p><strong>Email:</strong> {user?.email}</p>
+        <p><strong>Role:</strong> {user?.role || 'lawyer'}</p>
         <p><strong>Bar ID:</strong> {user?.bar_id_number}</p>
         <p><strong>Firm Code:</strong> {user?.firm_code || 'Not set'}</p>
         <p><strong>Verified:</strong> {String(user?.verified)}</p>
         <p><strong>Verification Status:</strong> {user?.bar_verification_status || 'unsubmitted'}</p>
         <p><strong>Verification Notes:</strong> {user?.bar_verification_notes || 'None'}</p>
         <p><strong>Nearest Courthouse:</strong> {user?.nearest_courthouse}</p>
-      </article>
+      </article> : null}
 
-      <form className="card stack" onSubmit={onSubmit}>
+      {!initialLoading ? <form className="card stack" onSubmit={onSubmit}>
         <label>
           Phone Number
           <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} required />
@@ -174,9 +189,9 @@ export default function ProfilePage() {
         <button type="submit" disabled={loading}>
           {loading ? 'Saving...' : 'Save Profile'}
         </button>
-      </form>
+      </form> : null}
 
-      <article className="card stack">
+      {!initialLoading ? <article className="card stack">
         <h3>Bar Verification (Placeholder)</h3>
         <label>
           Request Notes
@@ -190,28 +205,31 @@ export default function ProfilePage() {
         <button type="button" className="secondary" onClick={requestVerification}>
           Submit Verification Request
         </button>
-
-        <label>
-          Manual Verify Target User ID (blank = me)
-          <input
-            value={manualUserId}
-            onChange={(e) => setManualUserId(e.target.value)}
-            placeholder="User ID"
-          />
-        </label>
-        <label>
-          Manual Verification Notes
-          <input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} />
-        </label>
-        <div className="row">
-          <button type="button" onClick={() => markManualVerification(true)}>
-            Mark Verified (Manual)
-          </button>
-          <button type="button" className="secondary" onClick={() => markManualVerification(false)}>
-            Mark Rejected
-          </button>
-        </div>
-      </article>
+        {user?.role === 'admin' ? (
+          <>
+            <label>
+              Manual Verify Target User ID (blank = me)
+              <input
+                value={manualUserId}
+                onChange={(e) => setManualUserId(e.target.value)}
+                placeholder="User ID"
+              />
+            </label>
+            <label>
+              Manual Verification Notes
+              <input value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} />
+            </label>
+            <div className="row">
+              <button type="button" onClick={() => markManualVerification(true)}>
+                Mark Verified (Manual)
+              </button>
+              <button type="button" className="secondary" onClick={() => markManualVerification(false)}>
+                Mark Rejected
+              </button>
+            </div>
+          </>
+        ) : null}
+      </article> : null}
     </section>
   );
 }
