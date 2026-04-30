@@ -2,10 +2,11 @@ import { Router } from 'express';
 import pool from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { isValidCourthouse } from '../utils/courthouse.js';
+import { taskActionRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, taskActionRateLimit, async (req, res) => {
   try {
     const { courthouseLocation, description, deadline } = req.body;
 
@@ -83,7 +84,7 @@ router.get('/mine', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/:taskId/accept', requireAuth, async (req, res) => {
+router.post('/:taskId/accept', requireAuth, taskActionRateLimit, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -124,7 +125,7 @@ router.post('/:taskId/accept', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/:taskId/complete', requireAuth, async (req, res) => {
+router.post('/:taskId/complete', requireAuth, taskActionRateLimit, async (req, res) => {
   try {
     const result = await pool.query(
       `UPDATE tasks

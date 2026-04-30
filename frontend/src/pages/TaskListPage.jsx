@@ -20,6 +20,12 @@ function getUrgency(deadline) {
   return { urgent: true, label: `Due in ${diffHours}h` };
 }
 
+function verificationTier(lawyer) {
+  if (lawyer.verified || lawyer.bar_verification_status === 'verified') return 'Bar Verified';
+  if (lawyer.bar_verification_status === 'pending') return 'Verification Pending';
+  return 'Unverified';
+}
+
 function TaskCard({ task, onAccept, onComplete, currentUserId }) {
   const canAccept = task.status === 'open' && task.creator_id !== currentUserId;
   const canComplete = task.status === 'accepted' && task.accepted_by === currentUserId;
@@ -61,6 +67,7 @@ export default function TaskListPage() {
   const [taskSearch, setTaskSearch] = useState('');
   const [lawyerSearch, setLawyerSearch] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [taskSort, setTaskSort] = useState('deadline');
   const [lawyers, setLawyers] = useState([]);
   const [openTasks, setOpenTasks] = useState([]);
@@ -73,7 +80,7 @@ export default function TaskListPage() {
     setError('');
     try {
       const [lawyerList, openTaskList, mine] = await Promise.all([
-        api.getLawyers(token, courthouseFilter),
+        api.getLawyers(token, courthouseFilter, verifiedOnly),
         api.getOpenTasks(token, courthouseFilter),
         api.getMyTasks(token),
       ]);
@@ -221,11 +228,24 @@ export default function TaskListPage() {
               <option value="available">Available only</option>
               <option value="free">Free only</option>
             </select>
+            <label className="inline-check">
+              <input
+                type="checkbox"
+                checked={verifiedOnly}
+                onChange={(e) => setVerifiedOnly(e.target.checked)}
+              />
+              Verified only
+            </label>
           </div>
           <div className="stack">
             {filteredLawyers.map((lawyer) => (
               <article className="card" key={lawyer.id}>
-                <p><strong>{lawyer.name}</strong></p>
+                <p>
+                  <strong>{lawyer.name}</strong>{' '}
+                  <span className={`verify-badge ${lawyer.verified ? 'verified' : 'unverified'}`}>
+                    {verificationTier(lawyer)}
+                  </span>
+                </p>
                 <p>{lawyer.practice_area}</p>
                 <p>{lawyer.phone_number}</p>
                 <p>{lawyer.nearest_courthouse}</p>

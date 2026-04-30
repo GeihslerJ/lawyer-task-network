@@ -119,6 +119,7 @@ router.put('/me', requireAuth, async (req, res) => {
 router.get('/lawyers', requireAuth, async (req, res) => {
   try {
     const courthouse = req.query.courthouse;
+    const verifiedOnly = String(req.query.verifiedOnly || '').toLowerCase() === 'true';
 
     const values = [req.user.userId];
     let query = `SELECT id, name, email, phone_number, practice_area, state,
@@ -134,6 +135,10 @@ router.get('/lawyers', requireAuth, async (req, res) => {
       }
       values.push(courthouse);
       query += ` AND nearest_courthouse = $${values.length}`;
+    }
+
+    if (verifiedOnly) {
+      query += ' AND verified = TRUE';
     }
 
     query += ' ORDER BY availability_status DESC, busyness_status ASC, name ASC';

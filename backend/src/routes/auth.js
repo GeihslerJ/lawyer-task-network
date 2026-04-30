@@ -5,6 +5,7 @@ import pool from '../db.js';
 import { isValidCourthouse } from '../utils/courthouse.js';
 import { normalizeFirmCode } from '../utils/firm.js';
 import { decryptUserSensitiveFields, encryptField } from '../utils/encryption.js';
+import { authRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 const adminEmails = (process.env.ADMIN_EMAILS || '')
@@ -12,7 +13,7 @@ const adminEmails = (process.env.ADMIN_EMAILS || '')
   .map((value) => value.trim().toLowerCase())
   .filter(Boolean);
 
-router.post('/register', async (req, res) => {
+router.post('/register', authRateLimit, async (req, res) => {
   try {
     const {
       name,
@@ -84,7 +85,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authRateLimit, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {

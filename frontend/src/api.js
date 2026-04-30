@@ -38,8 +38,13 @@ export const api = {
   getVerificationQueue: (token) => request('/profile/bar-verification/queue', { token }),
   getActivityLogs: (token, limit = 50) => request(`/profile/activity-logs?limit=${limit}`, { token }),
   getFirmMembers: (token) => request('/profile/firm-members', { token }),
-  getLawyers: (token, courthouse) =>
-    request(`/profile/lawyers${courthouse ? `?courthouse=${encodeURIComponent(courthouse)}` : ''}`, { token }),
+  getLawyers: (token, courthouse, verifiedOnly = false) => {
+    const params = new URLSearchParams();
+    if (courthouse) params.set('courthouse', courthouse);
+    if (verifiedOnly) params.set('verifiedOnly', 'true');
+    const query = params.toString();
+    return request(`/profile/lawyers${query ? `?${query}` : ''}`, { token });
+  },
   createTask: (token, data) => request('/tasks', { method: 'POST', token, body: data }),
   getOpenTasks: (token, courthouse) =>
     request(`/tasks/open${courthouse ? `?courthouse=${encodeURIComponent(courthouse)}` : ''}`, { token }),

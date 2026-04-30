@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import pool from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { taskActionRateLimit } from '../middleware/rateLimit.js';
 
 const router = Router();
 
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, taskActionRateLimit, async (req, res) => {
   try {
     const { caseType, date, experienceLevelNeeded } = req.body;
 
@@ -67,7 +68,7 @@ router.get('/mine', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/:requestId/accept', requireAuth, async (req, res) => {
+router.post('/:requestId/accept', requireAuth, taskActionRateLimit, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
