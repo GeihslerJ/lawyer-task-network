@@ -59,6 +59,36 @@ function TaskCard({ task, onAccept, onComplete, currentUserId }) {
   );
 }
 
+function AcceptedTaskDetailCard({ task, currentUserId, onComplete }) {
+  const isAcceptedByMe = task.accepted_by === currentUserId;
+  const isMyRequest = task.creator_id === currentUserId;
+  const { urgent, label } = getUrgency(task.deadline);
+
+  return (
+    <article className={`card task-card ${urgent && task.status !== 'completed' ? 'urgent' : ''}`}>
+      <div className="task-card-header">
+        <h4>{task.courthouse_location}</h4>
+        {urgent && task.status !== 'completed' ? <span className="urgent-badge">{label}</span> : null}
+      </div>
+      <p><strong>Description:</strong> {task.description}</p>
+      <p><strong>Deadline:</strong> {new Date(task.deadline).toLocaleString()}</p>
+      <p><strong>Status:</strong> {task.status}</p>
+      <p><strong>Posted by:</strong> {task.creator_name || task.creator_id}</p>
+      <p><strong>Accepted by:</strong> {task.accepted_lawyer_name || task.accepted_by || 'Pending assignment'}</p>
+      <p>
+        <strong>Your role:</strong>{' '}
+        {isAcceptedByMe ? 'Handling this task' : isMyRequest ? 'Request creator' : 'Marketplace viewer'}
+      </p>
+
+      {task.status === 'accepted' && isAcceptedByMe ? (
+        <button type="button" className="secondary" onClick={() => onComplete(task.id)}>
+          Mark Completed
+        </button>
+      ) : null}
+    </article>
+  );
+}
+
 export default function TaskListPage() {
   const { token, user } = useAuth();
   const toast = useToast();
@@ -179,6 +209,11 @@ export default function TaskListPage() {
     });
 
   const urgentOpenCount = filteredOpenTasks.filter((task) => getUrgency(task.deadline).urgent).length;
+  const acceptedTasks = myTasks.filter((task) => task.status === 'accepted');
+  const acceptedByMe = acceptedTasks.filter((task) => task.accepted_by === user?.id);
+  const acceptedFromMyRequests = acceptedTasks.filter(
+    (task) => task.creator_id === user?.id && task.accepted_by !== user?.id
+  );
 
   return (
     <section className="stack">
@@ -286,6 +321,38 @@ export default function TaskListPage() {
             <TaskCard key={task.id} task={task} currentUserId={user?.id} onAccept={acceptTask} onComplete={completeTask} />
           ))}
           {myTasks.length === 0 ? <p>You have no created or accepted tasks yet.</p> : null}
+        </div>
+      </div>
+
+      <div className="split-grid">
+        <div>
+          <h3>Accepted Tasks You Are Handling</h3>
+          <div className="stack">
+            {acceptedByMe.map((task) => (
+              <AcceptedTaskDetailCard
+                key={`accepted-by-me-${task.id}`}
+                task={task}
+                currentUserId={user?.id}
+                onComplete={completeTask}
+              />
+            ))}
+            {acceptedByMe.length === 0 ? <p>You have not accepted any tasks yet.</p> : null}
+          </div>
+        </div>
+
+        <div>
+          <h3>Your Requests Accepted By Other Lawyers</h3>
+          <div className="stack">
+            {acceptedFromMyRequests.map((task) => (
+              <AcceptedTaskDetailCard
+                key={`accepted-my-request-${task.id}`}
+                task={task}
+                currentUserId={user?.id}
+                onComplete={completeTask}
+              />
+            ))}
+            {acceptedFromMyRequests.length === 0 ? <p>No one has accepted your requests yet.</p> : null}
+          </div>
         </div>
       </div>
     </section>
