@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
   state VARCHAR(60) NOT NULL,
   nearest_courthouse VARCHAR(255) NOT NULL,
   firm_code VARCHAR(30),
+  firm_name VARCHAR(160),
+  profile_image_url TEXT,
   role VARCHAR(20) NOT NULL DEFAULT 'lawyer' CHECK (role IN ('lawyer', 'admin')),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   verified BOOLEAN NOT NULL DEFAULT FALSE,
   bar_verification_status VARCHAR(20) NOT NULL DEFAULT 'unsubmitted' CHECK (bar_verification_status IN ('unsubmitted', 'pending', 'verified', 'rejected')),
   bar_verification_notes TEXT,
@@ -19,6 +22,18 @@ CREATE TABLE IF NOT EXISTS users (
   availability_status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (availability_status IN ('available', 'unavailable')),
   busyness_status VARCHAR(10) NOT NULL DEFAULT 'free' CHECK (busyness_status IN ('busy', 'free')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_ratings (
+  id SERIAL PRIMARY KEY,
+  rater_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rated_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  review TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (rater_user_id, rated_user_id),
+  CHECK (rater_user_id <> rated_user_id)
 );
 
 CREATE TABLE IF NOT EXISTS activity_logs (
@@ -57,7 +72,9 @@ CREATE TABLE IF NOT EXISTS second_chair_requests (
 CREATE INDEX IF NOT EXISTS idx_users_nearest_courthouse ON users(nearest_courthouse);
 CREATE INDEX IF NOT EXISTS idx_users_firm_code ON users(firm_code);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_tasks_status_courthouse ON tasks(status, courthouse_location);
 CREATE INDEX IF NOT EXISTS idx_second_chair_status_trial_date ON second_chair_requests(status, trial_date);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_actor_user_id ON activity_logs(actor_user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_logs_target_user_id ON activity_logs(target_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_ratings_rated_user_id ON user_ratings(rated_user_id);

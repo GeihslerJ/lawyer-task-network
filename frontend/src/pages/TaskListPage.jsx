@@ -102,6 +102,7 @@ export default function TaskListPage() {
   const [lawyers, setLawyers] = useState([]);
   const [openTasks, setOpenTasks] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
+  const [ratingsByLawyerId, setRatingsByLawyerId] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -182,6 +183,25 @@ export default function TaskListPage() {
       await loadData();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
+    }
+  };
+
+  const setLawyerRatingValue = (lawyerId, value) => {
+    setRatingsByLawyerId((prev) => ({ ...prev, [lawyerId]: value }));
+  };
+
+  const submitLawyerRating = async (lawyerId) => {
+    const stars = Number(ratingsByLawyerId[lawyerId] || 0);
+    if (!stars) {
+      toast.error('Select a star rating first.');
+      return;
+    }
+    try {
+      await api.rateLawyer(token, { ratedUserId: lawyerId, stars });
+      toast.success('Rating saved.');
+      await loadData();
+    } catch (err) {
       toast.error(err.message);
     }
   };
@@ -275,16 +295,46 @@ export default function TaskListPage() {
           <div className="stack">
             {filteredLawyers.map((lawyer) => (
               <article className="card" key={lawyer.id}>
-                <p>
-                  <strong>{lawyer.name}</strong>{' '}
-                  <span className={`verify-badge ${lawyer.verified ? 'verified' : 'unverified'}`}>
-                    {verificationTier(lawyer)}
-                  </span>
-                </p>
+                <div className="lawyer-card-head">
+                  {lawyer.profile_image_url ? (
+                    <img src={lawyer.profile_image_url} alt={lawyer.name} className="mini-avatar" />
+                  ) : (
+                    <div className="mini-avatar placeholder">{(lawyer.name || '?').slice(0, 1).toUpperCase()}</div>
+                  )}
+                  <div>
+                    <p>
+                      <strong>{lawyer.name}</strong>{' '}
+                      <span className={`verify-badge ${lawyer.verified ? 'verified' : 'unverified'}`}>
+                        {verificationTier(lawyer)}
+                      </span>
+                    </p>
+                    <p className="muted-line">{lawyer.firm_name || 'Independent counsel'}</p>
+                  </div>
+                </div>
                 <p>{lawyer.practice_area}</p>
                 <p>{lawyer.phone_number}</p>
                 <p>{lawyer.nearest_courthouse}</p>
                 <p>Status: {lawyer.availability_status} / {lawyer.busyness_status}</p>
+                <p>
+                  Reputation: {Number(lawyer.reputation_avg || 0).toFixed(2)} / 5 ({lawyer.reputation_count || 0}{' '}
+                  ratings)
+                </p>
+                <div className="row">
+                  <select
+                    value={ratingsByLawyerId[lawyer.id] || ''}
+                    onChange={(e) => setLawyerRatingValue(lawyer.id, e.target.value)}
+                  >
+                    <option value="">Rate</option>
+                    <option value="1">1 star</option>
+                    <option value="2">2 stars</option>
+                    <option value="3">3 stars</option>
+                    <option value="4">4 stars</option>
+                    <option value="5">5 stars</option>
+                  </select>
+                  <button type="button" className="secondary" onClick={() => submitLawyerRating(lawyer.id)}>
+                    Submit Rating
+                  </button>
+                </div>
               </article>
             ))}
             {filteredLawyers.length === 0 ? <p>No lawyers found for this filter.</p> : null}

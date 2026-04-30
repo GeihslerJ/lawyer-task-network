@@ -31,6 +31,9 @@ export const api = {
   login: (data) => request('/auth/login', { method: 'POST', body: data }),
   getProfile: (token) => request('/profile/me', { token }),
   updateProfile: (token, data) => request('/profile/me', { method: 'PUT', token, body: data }),
+  deactivateMyAccount: (token, password) => request('/profile/me', { method: 'DELETE', token, body: { password } }),
+  setUserActiveStatus: (token, userId, isActive) =>
+    request(`/profile/admin/users/${userId}/status`, { method: 'POST', token, body: { isActive } }),
   requestBarVerification: (token, notes) =>
     request('/profile/me/bar-verification-request', { method: 'POST', token, body: { notes } }),
   manualBarVerification: (token, payload) =>
@@ -45,6 +48,7 @@ export const api = {
     const query = params.toString();
     return request(`/profile/lawyers${query ? `?${query}` : ''}`, { token });
   },
+  rateLawyer: (token, payload) => request('/profile/ratings', { method: 'POST', token, body: payload }),
   createTask: (token, data) => request('/tasks', { method: 'POST', token, body: data }),
   getOpenTasks: (token, courthouse) =>
     request(`/tasks/open${courthouse ? `?courthouse=${encodeURIComponent(courthouse)}` : ''}`, { token }),

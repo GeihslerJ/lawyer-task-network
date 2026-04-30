@@ -59,6 +59,9 @@ async function ensureSchema() {
   await pool.query(
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'lawyer' CHECK (role IN ('lawyer', 'admin'))"
   );
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS firm_name VARCHAR(160)');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image_url TEXT');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE');
   await pool.query(
     `CREATE TABLE IF NOT EXISTS activity_logs (
       id SERIAL PRIMARY KEY,
@@ -67,6 +70,19 @@ async function ensureSchema() {
       action VARCHAR(80) NOT NULL,
       metadata JSONB,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`
+  );
+  await pool.query(
+    `CREATE TABLE IF NOT EXISTS user_ratings (
+      id SERIAL PRIMARY KEY,
+      rater_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rated_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+      review TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (rater_user_id, rated_user_id),
+      CHECK (rater_user_id <> rated_user_id)
     )`
   );
 }

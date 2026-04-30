@@ -17,7 +17,7 @@ function Layout({ children }) {
   return (
     <div className="app-shell">
       <header className="header">
-        <h1>Lawyer Task Network</h1>
+        <h1>BarBridge</h1>
         <nav>
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/tasks">Task List</NavLink>

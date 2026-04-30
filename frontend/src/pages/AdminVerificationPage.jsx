@@ -11,6 +11,7 @@ export default function AdminVerificationPage() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notesByUserId, setNotesByUserId] = useState({});
+  const [accountUserId, setAccountUserId] = useState('');
   const [error, setError] = useState('');
 
   const load = async () => {
@@ -28,6 +29,21 @@ export default function AdminVerificationPage() {
       toast.error(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const setAccountStatus = async (isActive) => {
+    const target = Number(accountUserId);
+    if (!target) {
+      toast.error('Enter a user ID first.');
+      return;
+    }
+    try {
+      const payload = await api.setUserActiveStatus(token, target, isActive);
+      toast.success(payload.message);
+      await load();
+    } catch (err) {
+      toast.error(err.message);
     }
   };
 
@@ -58,6 +74,26 @@ export default function AdminVerificationPage() {
 
       {!loading && (
         <>
+          <article className="card stack">
+            <h3>Account Management</h3>
+            <label>
+              Target User ID
+              <input
+                value={accountUserId}
+                onChange={(e) => setAccountUserId(e.target.value)}
+                placeholder="Enter user ID"
+              />
+            </label>
+            <div className="row">
+              <button type="button" className="secondary" onClick={() => setAccountStatus(false)}>
+                Deactivate Account
+              </button>
+              <button type="button" onClick={() => setAccountStatus(true)}>
+                Reactivate Account
+              </button>
+            </div>
+          </article>
+
           <article className="card stack">
             <h3>Pending / Rejected Requests</h3>
             {queue.length === 0 ? <p>No users waiting for review.</p> : null}

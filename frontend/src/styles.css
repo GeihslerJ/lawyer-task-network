@@ -391,6 +391,78 @@ button.secondary,
   color: #8a5b10;
 }
 
+.profile-overview {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 1rem;
+}
+
+.profile-avatar-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.profile-avatar {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #d2dff3;
+}
+
+.profile-avatar.placeholder {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf2ff;
+  border: 3px solid #d2dff3;
+  color: #17437c;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.lawyer-card-head {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.mini-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #d2def0;
+}
+
+.mini-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf2ff;
+  color: #1f4f8e;
+  font-weight: 800;
+}
+
+.muted-line {
+  color: #69809e;
+  font-size: 0.88rem;
+}
+
+.danger-card {
+  border-color: #e4b4b4;
+  background: #fff8f8;
+}
+
+.danger-button {
+  background: #b63a3a;
+  color: #fff;
+}
+
 .task-card h4 {
   margin: 0;
 }
@@ -442,5 +514,9 @@ button.secondary,
 
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-overview {
+    grid-template-columns: 1fr;
   }
 }

@@ -24,6 +24,8 @@ router.post('/register', authRateLimit, async (req, res) => {
       state,
       nearestCourthouse,
       firmCode,
+      firmName,
+      profileImageUrl,
       password,
     } = req.body;
 
@@ -53,10 +55,10 @@ router.post('/register', authRateLimit, async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO users
-       (name, email, password_hash, phone_number, practice_area, bar_id_number, state, nearest_courthouse, firm_code, role)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       (name, email, password_hash, phone_number, practice_area, bar_id_number, state, nearest_courthouse, firm_code, firm_name, profile_image_url, role)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING id, name, email, phone_number, practice_area, bar_id_number, state, nearest_courthouse,
-                 firm_code, role, verified, bar_verification_status, bar_verification_notes,
+                 firm_code, firm_name, profile_image_url, role, is_active, verified, bar_verification_status, bar_verification_notes,
                  bar_verification_requested_at, bar_verified_at, bar_verified_by,
                  availability_status, busyness_status`,
       [
@@ -69,6 +71,8 @@ router.post('/register', authRateLimit, async (req, res) => {
         state,
         nearestCourthouse,
         normalizedFirmCode,
+        firmName?.trim() || null,
+        profileImageUrl?.trim() || null,
         role,
       ]
     );
@@ -94,7 +98,7 @@ router.post('/login', authRateLimit, async (req, res) => {
 
     const result = await pool.query(
       `SELECT id, name, email, password_hash, phone_number, practice_area, bar_id_number, state,
-              nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
+              nearest_courthouse, firm_code, firm_name, profile_image_url, role, is_active, verified, bar_verification_status, bar_verification_notes,
               bar_verification_requested_at, bar_verified_at, bar_verified_by,
               availability_status, busyness_status
        FROM users
@@ -107,6 +111,9 @@ router.post('/login', authRateLimit, async (req, res) => {
     }
 
     const dbUser = decryptUserSensitiveFields(result.rows[0]);
+    if (!dbUser.is_active) {
+      return res.status(403).json({ error: 'Account is deactivated. Contact an admin.' });
+    }
     const isValid = await bcrypt.compare(password, dbUser.password_hash);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -116,7 +123,7 @@ router.post('/login', authRateLimit, async (req, res) => {
       const promoted = await pool.query(
         `UPDATE users SET role = 'admin' WHERE id = $1
          RETURNING id, name, email, password_hash, phone_number, practice_area, bar_id_number, state,
-                   nearest_courthouse, firm_code, role, verified, bar_verification_status, bar_verification_notes,
+                   nearest_courthouse, firm_code, firm_name, profile_image_url, role, is_active, verified, bar_verification_status, bar_verification_notes,
                    bar_verification_requested_at, bar_verified_at, bar_verified_by,
                    availability_status, busyness_status`,
         [dbUser.id]

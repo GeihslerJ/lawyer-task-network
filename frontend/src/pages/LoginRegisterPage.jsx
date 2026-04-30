@@ -14,6 +14,8 @@ const emptyForm = {
   state: '',
   nearestCourthouse: '',
   firmCode: '',
+  firmName: '',
+  profileImageUrl: '',
   password: '',
 };
 
@@ -77,6 +79,13 @@ export default function LoginRegisterPage() {
             <input name="barIdNumber" placeholder="Bar ID Number" value={form.barIdNumber} onChange={onChange} required />
             <input name="state" placeholder="State (e.g. TX)" value={form.state} onChange={onChange} required />
             <input name="firmCode" placeholder="Firm Code (optional)" value={form.firmCode} onChange={onChange} />
+            <input name="firmName" placeholder="Firm Name (optional)" value={form.firmName} onChange={onChange} />
+            <input
+              name="profileImageUrl"
+              placeholder="Profile Image URL (optional)"
+              value={form.profileImageUrl}
+              onChange={onChange}
+            />
             <select name="nearestCourthouse" value={form.nearestCourthouse} onChange={onChange} required>
               <option value="">Select nearest courthouse</option>
               {courthouses.map((courthouse) => (

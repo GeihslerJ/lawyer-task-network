@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 
 export default function ProfilePage() {
-  const { token, user, setUser } = useAuth();
+  const { token, user, setUser, logout } = useAuth();
   const toast = useToast();
   const [form, setForm] = useState({
     phoneNumber: user?.phone_number || '',
@@ -14,6 +14,8 @@ export default function ProfilePage() {
     state: user?.state || '',
     nearestCourthouse: user?.nearest_courthouse || '',
     firmCode: user?.firm_code || '',
+    firmName: user?.firm_name || '',
+    profileImageUrl: user?.profile_image_url || '',
     availabilityStatus: user?.availability_status || 'available',
     busynessStatus: user?.busyness_status || 'free',
   });
@@ -22,6 +24,7 @@ export default function ProfilePage() {
   const [verificationNotes, setVerificationNotes] = useState('');
   const [manualUserId, setManualUserId] = useState('');
   const [manualNotes, setManualNotes] = useState('Manual placeholder verification.');
+  const [deactivatePassword, setDeactivatePassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,6 +42,8 @@ export default function ProfilePage() {
           state: profile.state,
           nearestCourthouse: profile.nearest_courthouse,
           firmCode: profile.firm_code || '',
+          firmName: profile.firm_name || '',
+          profileImageUrl: profile.profile_image_url || '',
           availabilityStatus: profile.availability_status,
           busynessStatus: profile.busyness_status,
         });
@@ -112,24 +117,62 @@ export default function ProfilePage() {
     }
   };
 
+  const deactivateAccount = async () => {
+    if (!deactivatePassword) {
+      toast.error('Enter your password before deactivating.');
+      return;
+    }
+
+    try {
+      const payload = await api.deactivateMyAccount(token, deactivatePassword);
+      toast.success(payload.message || 'Account deactivated.');
+      logout();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   return (
     <section className="stack">
       <h2>Profile</h2>
       {initialLoading ? <LoadingSkeleton lines={6} /> : null}
 
-      {!initialLoading ? <article className="card">
-        <p><strong>Name:</strong> {user?.name}</p>
-        <p><strong>Email:</strong> {user?.email}</p>
-        <p><strong>Role:</strong> {user?.role || 'lawyer'}</p>
-        <p><strong>Bar ID:</strong> {user?.bar_id_number}</p>
-        <p><strong>Firm Code:</strong> {user?.firm_code || 'Not set'}</p>
-        <p><strong>Verified:</strong> {String(user?.verified)}</p>
-        <p><strong>Verification Status:</strong> {user?.bar_verification_status || 'unsubmitted'}</p>
-        <p><strong>Verification Notes:</strong> {user?.bar_verification_notes || 'None'}</p>
-        <p><strong>Nearest Courthouse:</strong> {user?.nearest_courthouse}</p>
+      {!initialLoading ? <article className="card profile-overview">
+        <div className="profile-avatar-wrap">
+          {user?.profile_image_url ? (
+            <img src={user.profile_image_url} alt={`${user?.name} profile`} className="profile-avatar" />
+          ) : (
+            <div className="profile-avatar placeholder">{(user?.name || '?').slice(0, 1).toUpperCase()}</div>
+          )}
+        </div>
+        <div className="profile-meta stack">
+          <p><strong>Name:</strong> {user?.name}</p>
+          <p><strong>Email:</strong> {user?.email}</p>
+          <p><strong>Role:</strong> {user?.role || 'lawyer'}</p>
+          <p><strong>Firm Name:</strong> {user?.firm_name || 'Not set'}</p>
+          <p><strong>Firm Code:</strong> {user?.firm_code || 'Not set'}</p>
+          <p><strong>Bar ID:</strong> {user?.bar_id_number}</p>
+          <p><strong>Verified:</strong> {String(user?.verified)}</p>
+          <p><strong>Verification Status:</strong> {user?.bar_verification_status || 'unsubmitted'}</p>
+          <p><strong>Nearest Courthouse:</strong> {user?.nearest_courthouse}</p>
+          <p>
+            <strong>Reputation:</strong> {Number(user?.reputation_avg || 0).toFixed(2)} / 5 ({user?.reputation_count || 0}{' '}
+            ratings)
+          </p>
+        </div>
       </article> : null}
 
       {!initialLoading ? <form className="card stack" onSubmit={onSubmit}>
+        <label>
+          Profile Image URL
+          <input name="profileImageUrl" value={form.profileImageUrl} onChange={onChange} placeholder="https://..." />
+        </label>
+
+        <label>
+          Firm Name
+          <input name="firmName" value={form.firmName} onChange={onChange} placeholder="Your firm name" />
+        </label>
+
         <label>
           Phone Number
           <input name="phoneNumber" value={form.phoneNumber} onChange={onChange} required />
@@ -229,6 +272,23 @@ export default function ProfilePage() {
             </div>
           </>
         ) : null}
+      </article> : null}
+
+      {!initialLoading ? <article className="card stack danger-card">
+        <h3>Deactivate Account</h3>
+        <p>This hides your account from the marketplace and blocks login until an admin reactivates it.</p>
+        <label>
+          Confirm Password
+          <input
+            type="password"
+            value={deactivatePassword}
+            onChange={(e) => setDeactivatePassword(e.target.value)}
+            placeholder="Enter password to deactivate"
+          />
+        </label>
+        <button type="button" className="danger-button" onClick={deactivateAccount}>
+          Deactivate My Account
+        </button>
       </article> : null}
     </section>
   );
