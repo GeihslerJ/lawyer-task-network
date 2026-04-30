@@ -2,6 +2,8 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 
 const levelOptions = ['Any', 'Junior', 'Mid-level', 'Senior', 'First-chair trial experience'];
 
@@ -28,6 +30,7 @@ function RequestCard({ requestItem, currentUserId, onAccept }) {
 
 export default function SecondChairPage() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [form, setForm] = useState({
     caseType: '',
     date: '',
@@ -35,9 +38,11 @@ export default function SecondChairPage() {
   });
   const [openRequests, setOpenRequests] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
+  const [search, setSearch] = useState('');
+  const [experienceFilter, setExperienceFilter] = useState('Any');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
@@ -51,6 +56,7 @@ export default function SecondChairPage() {
       setMyRequests(mine);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -72,21 +78,33 @@ export default function SecondChairPage() {
     try {
       await api.createSecondChairRequest(token, form);
       setMessage('Second-chair request posted.');
+      toast.success('Second-chair request posted.');
       setForm({ caseType: '', date: '', experienceLevelNeeded: levelOptions[0] });
       await loadData();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
 
   const acceptRequest = async (requestId) => {
     try {
       await api.acceptSecondChairRequest(token, requestId);
+      toast.success('Second-chair request accepted.');
       await loadData();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
+
+  const filteredOpenRequests = openRequests
+    .filter((requestItem) =>
+      `${requestItem.case_type} ${requestItem.creator_name || ''}`.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((requestItem) =>
+      experienceFilter === 'Any' ? true : requestItem.experience_level_needed === experienceFilter
+    );
 
   return (
     <section className="stack">
@@ -124,15 +142,30 @@ export default function SecondChairPage() {
       <button type="button" className="secondary" onClick={loadData} disabled={loading}>
         {loading ? 'Refreshing...' : 'Refresh Requests'}
       </button>
+      <div className="row">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by case type or posting lawyer"
+        />
+        <select value={experienceFilter} onChange={(e) => setExperienceFilter(e.target.value)}>
+          {levelOptions.map((level) => (
+            <option key={level} value={level}>
+              {level === 'Any' ? 'All experience levels' : level}
+            </option>
+          ))}
+        </select>
+      </div>
+      {loading ? <LoadingSkeleton lines={5} /> : null}
 
-      <div className="split-grid">
+      {!loading ? <div className="split-grid">
         <div>
           <h3>Open Requests</h3>
           <div className="stack">
-            {openRequests.map((requestItem) => (
+            {filteredOpenRequests.map((requestItem) => (
               <RequestCard key={requestItem.id} requestItem={requestItem} currentUserId={user?.id} onAccept={acceptRequest} />
             ))}
-            {openRequests.length === 0 ? <p>No open second-chair requests.</p> : null}
+            {filteredOpenRequests.length === 0 ? <p>No open second-chair requests match your filters.</p> : null}
           </div>
         </div>
 
@@ -145,7 +178,7 @@ export default function SecondChairPage() {
             {myRequests.length === 0 ? <p>You have no posted or accepted second-chair requests.</p> : null}
           </div>
         </div>
-      </div>
+      </div> : null}
     </section>
   );
 }

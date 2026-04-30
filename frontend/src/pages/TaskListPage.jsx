@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getSocket } from '../realtime/socket.js';
+import { useToast } from '../context/ToastContext.jsx';
+import LoadingSkeleton from '../components/LoadingSkeleton.jsx';
 
 function getUrgency(deadline) {
   const dueAt = new Date(deadline).getTime();
@@ -53,13 +55,18 @@ function TaskCard({ task, onAccept, onComplete, currentUserId }) {
 
 export default function TaskListPage() {
   const { token, user } = useAuth();
+  const toast = useToast();
   const [courthouses, setCourthouses] = useState([]);
   const [courthouseFilter, setCourthouseFilter] = useState('');
+  const [taskSearch, setTaskSearch] = useState('');
+  const [lawyerSearch, setLawyerSearch] = useState('');
+  const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  const [taskSort, setTaskSort] = useState('deadline');
   const [lawyers, setLawyers] = useState([]);
   const [openTasks, setOpenTasks] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
@@ -75,6 +82,7 @@ export default function TaskListPage() {
       setMyTasks(mine);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -87,6 +95,7 @@ export default function TaskListPage() {
         setCourthouses(list);
       } catch (err) {
         setError(err.message);
+        toast.error(err.message);
       } finally {
         await loadData();
       }
@@ -121,24 +130,65 @@ export default function TaskListPage() {
   const acceptTask = async (taskId) => {
     try {
       await api.acceptTask(token, taskId);
+      toast.success('Task accepted.');
       await loadData();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
 
   const completeTask = async (taskId) => {
     try {
       await api.completeTask(token, taskId);
+      toast.success('Task marked completed.');
       await loadData();
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     }
   };
+
+  const filteredLawyers = lawyers
+    .filter((lawyer) => {
+      if (availabilityFilter === 'available') return lawyer.availability_status === 'available';
+      if (availabilityFilter === 'free') return lawyer.busyness_status === 'free';
+      return true;
+    })
+    .filter((lawyer) => {
+      const haystack = `${lawyer.name} ${lawyer.practice_area} ${lawyer.nearest_courthouse}`.toLowerCase();
+      return haystack.includes(lawyerSearch.toLowerCase());
+    });
+
+  const filteredOpenTasks = openTasks
+    .filter((task) => {
+      const haystack = `${task.description} ${task.courthouse_location} ${task.creator_name || ''}`.toLowerCase();
+      return haystack.includes(taskSearch.toLowerCase());
+    })
+    .sort((a, b) => {
+      if (taskSort === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
+      if (taskSort === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+      return a.courthouse_location.localeCompare(b.courthouse_location);
+    });
+
+  const urgentOpenCount = filteredOpenTasks.filter((task) => getUrgency(task.deadline).urgent).length;
 
   return (
     <section className="stack">
       <h2>Task Marketplace</h2>
+
+      <div className="card-grid">
+        <article className="card">
+          <h3>Open Tasks</h3>
+          <p><strong>{filteredOpenTasks.length}</strong> matching current filters</p>
+          <p><strong>{urgentOpenCount}</strong> due within 24 hours</p>
+        </article>
+        <article className="card">
+          <h3>Lawyer Matches</h3>
+          <p><strong>{filteredLawyers.length}</strong> visible lawyers</p>
+          <p><strong>{filteredLawyers.filter((l) => l.availability_status === 'available').length}</strong> currently available</p>
+        </article>
+      </div>
 
       <div className="row">
         <select value={courthouseFilter} onChange={(e) => setCourthouseFilter(e.target.value)}>
@@ -155,12 +205,25 @@ export default function TaskListPage() {
       </div>
 
       {error ? <p className="error">{error}</p> : null}
+      {loading ? <LoadingSkeleton lines={6} /> : null}
 
-      <div className="split-grid">
+      {!loading ? <div className="split-grid">
         <div>
           <h3>Available Lawyers</h3>
+          <div className="row">
+            <input
+              value={lawyerSearch}
+              onChange={(e) => setLawyerSearch(e.target.value)}
+              placeholder="Search lawyers, practice areas, courthouses"
+            />
+            <select value={availabilityFilter} onChange={(e) => setAvailabilityFilter(e.target.value)}>
+              <option value="all">All statuses</option>
+              <option value="available">Available only</option>
+              <option value="free">Free only</option>
+            </select>
+          </div>
           <div className="stack">
-            {lawyers.map((lawyer) => (
+            {filteredLawyers.map((lawyer) => (
               <article className="card" key={lawyer.id}>
                 <p><strong>{lawyer.name}</strong></p>
                 <p>{lawyer.practice_area}</p>
@@ -169,20 +232,32 @@ export default function TaskListPage() {
                 <p>Status: {lawyer.availability_status} / {lawyer.busyness_status}</p>
               </article>
             ))}
-            {lawyers.length === 0 ? <p>No lawyers found for this filter.</p> : null}
+            {filteredLawyers.length === 0 ? <p>No lawyers found for this filter.</p> : null}
           </div>
         </div>
 
         <div>
           <h3>Open Tasks</h3>
+          <div className="row">
+            <input
+              value={taskSearch}
+              onChange={(e) => setTaskSearch(e.target.value)}
+              placeholder="Search task description, courthouse, posted by"
+            />
+            <select value={taskSort} onChange={(e) => setTaskSort(e.target.value)}>
+              <option value="deadline">Sort: deadline</option>
+              <option value="newest">Sort: newest</option>
+              <option value="courthouse">Sort: courthouse</option>
+            </select>
+          </div>
           <div className="stack">
-            {openTasks.map((task) => (
+            {filteredOpenTasks.map((task) => (
               <TaskCard key={task.id} task={task} currentUserId={user?.id} onAccept={acceptTask} onComplete={completeTask} />
             ))}
-            {openTasks.length === 0 ? <p>No open tasks right now.</p> : null}
+            {filteredOpenTasks.length === 0 ? <p>No open tasks match your current filters.</p> : null}
           </div>
         </div>
-      </div>
+      </div> : null}
 
       <div>
         <h3>Your Tasks</h3>
