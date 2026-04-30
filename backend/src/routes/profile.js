@@ -9,11 +9,15 @@ import { emitAvailabilityUpdate } from '../socket.js';
 const router = Router();
 
 async function logActivity(actorUserId, targetUserId, action, metadata = null) {
-  await pool.query(
-    `INSERT INTO activity_logs (actor_user_id, target_user_id, action, metadata)
-     VALUES ($1, $2, $3, $4)`,
-    [actorUserId ?? null, targetUserId ?? null, action, metadata]
-  );
+  try {
+    await pool.query(
+      `INSERT INTO activity_logs (actor_user_id, target_user_id, action, metadata)
+       VALUES ($1, $2, $3, $4)`,
+      [actorUserId ?? null, targetUserId ?? null, action, metadata]
+    );
+  } catch (error) {
+    console.error('Activity log write failed:', error.message);
+  }
 }
 
 router.get('/me', requireAuth, async (req, res) => {
