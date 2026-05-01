@@ -25,6 +25,7 @@ export default function LoginRegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [courthouses, setCourthouses] = useState([]);
+  const [courthouseCaveats, setCourthouseCaveats] = useState([]);
 
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -37,8 +38,9 @@ export default function LoginRegisterPage() {
   useEffect(() => {
     const loadCourthouses = async () => {
       try {
-        const list = await api.getCourthouses();
+        const [list, caveats] = await Promise.all([api.getCourthouses(), api.getCourthouseCaveats()]);
         setCourthouses(list);
+        setCourthouseCaveats(caveats);
       } catch (err) {
         setError(err.message);
       }
@@ -94,6 +96,11 @@ export default function LoginRegisterPage() {
                 </option>
               ))}
             </select>
+            <div className="caveat-box">
+              {courthouseCaveats.map((caveat) => (
+                <p key={caveat}>- {caveat}</p>
+              ))}
+            </div>
           </>
         )}
         <input name="email" type="email" placeholder="Email" value={form.email} onChange={onChange} required />

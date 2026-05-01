@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 export default function CreateTaskPage() {
   const { token, user } = useAuth();
   const [courthouses, setCourthouses] = useState([]);
+  const [courthouseCaveats, setCourthouseCaveats] = useState([]);
   const [form, setForm] = useState({
     courthouseLocation: user?.nearest_courthouse || '',
     description: '',
@@ -22,8 +23,9 @@ export default function CreateTaskPage() {
   useEffect(() => {
     const loadCourthouses = async () => {
       try {
-        const list = await api.getCourthouses();
+        const [list, caveats] = await Promise.all([api.getCourthouses(), api.getCourthouseCaveats()]);
         setCourthouses(list);
+        setCourthouseCaveats(caveats);
         setForm((prev) => ({
           ...prev,
           courthouseLocation: prev.courthouseLocation || user?.nearest_courthouse || list[0] || '',
@@ -67,6 +69,11 @@ export default function CreateTaskPage() {
               </option>
             ))}
           </select>
+          <div className="caveat-box">
+            {courthouseCaveats.map((caveat) => (
+              <p key={caveat}>- {caveat}</p>
+            ))}
+          </div>
         </label>
 
         <label>

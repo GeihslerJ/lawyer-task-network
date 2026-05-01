@@ -7,7 +7,7 @@ import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import taskRoutes from './routes/tasks.js';
 import secondChairRoutes from './routes/secondChair.js';
-import { COURTHOUSE_OPTIONS } from './utils/courthouse.js';
+import { COURTHOUSE_CAVEATS, COURTHOUSE_OPTIONS } from './utils/courthouse.js';
 import { initSocket } from './socket.js';
 
 dotenv.config();
@@ -41,6 +41,10 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/courthouses', (_req, res) => {
   res.json(COURTHOUSE_OPTIONS);
+});
+
+app.get('/api/courthouse-caveats', (_req, res) => {
+  res.json(COURTHOUSE_CAVEATS);
 });
 
 app.use('/api/auth', authRoutes);

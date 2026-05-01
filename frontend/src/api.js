@@ -27,6 +27,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
 
 export const api = {
   getCourthouses: () => request('/courthouses'),
+  getCourthouseCaveats: () => request('/courthouse-caveats'),
   register: (data) => request('/auth/register', { method: 'POST', body: data }),
   login: (data) => request('/auth/login', { method: 'POST', body: data }),
   getProfile: (token) => request('/profile/me', { token }),

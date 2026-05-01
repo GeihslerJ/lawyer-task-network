@@ -463,6 +463,19 @@ button.secondary,
   color: #fff;
 }
 
+.caveat-box {
+  margin-top: 0.45rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #d8e4f3;
+  border-radius: 10px;
+  background: #f7fbff;
+}
+
+.caveat-box p {
+  font-size: 0.82rem;
+  color: #4d6585;
+}
+
 .task-card h4 {
   margin: 0;
 }

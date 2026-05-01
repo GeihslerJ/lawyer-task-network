@@ -21,6 +21,7 @@ export default function ProfilePage() {
   });
 
   const [courthouses, setCourthouses] = useState([]);
+  const [courthouseCaveats, setCourthouseCaveats] = useState([]);
   const [verificationNotes, setVerificationNotes] = useState('');
   const [manualUserId, setManualUserId] = useState('');
   const [manualNotes, setManualNotes] = useState('Manual placeholder verification.');
@@ -33,9 +34,14 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const [profile, courthouseList] = await Promise.all([api.getProfile(token), api.getCourthouses()]);
+        const [profile, courthouseList, caveats] = await Promise.all([
+          api.getProfile(token),
+          api.getCourthouses(),
+          api.getCourthouseCaveats(),
+        ]);
         setUser(profile);
         setCourthouses(courthouseList);
+        setCourthouseCaveats(caveats);
         setForm({
           phoneNumber: profile.phone_number,
           practiceArea: profile.practice_area,
@@ -208,6 +214,11 @@ export default function ProfilePage() {
               </option>
             ))}
           </select>
+          <div className="caveat-box">
+            {courthouseCaveats.map((caveat) => (
+              <p key={caveat}>- {caveat}</p>
+            ))}
+          </div>
         </label>
 
         <label>

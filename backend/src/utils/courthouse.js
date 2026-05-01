@@ -53,8 +53,43 @@ const courthouseByState = {
 };
 
 export const COURTHOUSE_OPTIONS = Object.freeze(
-  [...new Set(Object.values(courthouseByState))].sort((a, b) => a.localeCompare(b))
+  [
+    ...new Set([
+      ...Object.values(courthouseByState),
+      'Orleans Parish Criminal District Court (New Orleans, LA)',
+      'Orleans Parish Civil District Court (New Orleans, LA)',
+      '19th Judicial District Court (Baton Rouge, LA)',
+      '24th Judicial District Court (Gretna, LA)',
+      '15th Judicial District Court (Lafayette, LA)',
+      '14th Judicial District Court (Lake Charles, LA)',
+      'Harris County Civil District Courts (Houston, TX)',
+      'Harris County Criminal District Courts (Houston, TX)',
+      'Cook County Circuit Court - Criminal Division (Chicago, IL)',
+      'Cook County Circuit Court - Civil Division (Chicago, IL)',
+      'Maricopa County Superior Court - Downtown (Phoenix, AZ)',
+      'Clark County District Court (Las Vegas, NV)',
+      'King County Superior Court (Seattle, WA)',
+      'Miami-Dade County Civil Courthouse (Miami, FL)',
+      'Miami-Dade County Criminal Justice Building (Miami, FL)',
+      'New York County Supreme Court - Civil Term (Manhattan, NY)',
+      'New York County Supreme Court - Criminal Term (Manhattan, NY)',
+      'Philadelphia Court of Common Pleas - Criminal Justice Center (Philadelphia, PA)',
+      'Philadelphia Court of Common Pleas - City Hall Civil Division (Philadelphia, PA)',
+      'Fulton County Superior Court (Atlanta, GA)',
+      'Mecklenburg County Courthouse (Charlotte, NC)',
+      'Dallas County Civil District Courts (Dallas, TX)',
+      'Dallas County Criminal District Courts (Dallas, TX)',
+    ]),
+  ].sort((a, b) => a.localeCompare(b))
 );
+
+export const COURTHOUSE_CAVEATS = Object.freeze([
+  'District court naming differs by state (District, Circuit, Superior, Common Pleas).',
+  'Louisiana uses parish-based courts, including Orleans Parish Civil and Criminal District Courts.',
+  'Some large counties split civil and criminal dockets into separate courthouses.',
+  'Federal U.S. courthouses and state trial courts are both included in this list.',
+  'Always confirm venue, division, and filing location before accepting a task.',
+]);
 
 export function isValidCourthouse(courthouse) {
   return COURTHOUSE_OPTIONS.includes((courthouse || '').trim());
